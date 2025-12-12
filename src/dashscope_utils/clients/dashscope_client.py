@@ -70,9 +70,12 @@ class DashScopeClient(BaseLLMClient):
                                               timeout=self._timeout if prepared_payload.get("timeout") is None else prepared_payload.get("timeout"),
                                               **extra)
             
+        # 检查 status_code 是否为 200，否则抛出异常
+        status_code = getattr(result, 'status_code', None)
         
-        if hasattr(result, "to_dict"):
-            return result.to_dict()
+        if status_code != 200:
+            raise Exception(f'dashscope 请求失败, status_code={status_code}, result={result}')
+    
         return result if isinstance(result, dict) else {"response": result}
 
 

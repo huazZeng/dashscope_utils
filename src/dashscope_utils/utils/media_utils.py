@@ -27,15 +27,19 @@ def process_image(image_url: str, max_size_mb: int = 10) -> str:
     """处理单个图像文件
     
     Args:
-        image_url: 图像URL (file://格式)
+        image_url: 图像URL (file://、http://、https://或oss://格式)
         max_size_mb: 最大文件大小(MB)，超过则压缩
         
     Returns:
-        处理后的图像URL (file://格式)
+        处理后的图像URL
         
     Raises:
         FileNotFoundError: 文件不存在时抛出
     """
+    # 如果是网络URL或OSS URL，直接返回
+    if image_url.startswith(('http://', 'https://', 'oss://')):
+        return image_url
+    
     if not _is_local_file_url(image_url):
         raise FileNotFoundError(f"本地 image 路径不存在: {image_url}")
     
@@ -69,8 +73,12 @@ def process_video_frames(video_frames: List[str], max_size_mb: int = 10) -> List
     """
     new_frames = []
     for img_url in video_frames:
-        processed_url = process_image(img_url, max_size_mb)
-        new_frames.append(processed_url)
+        # 如果是网络URL或OSS URL，直接返回
+        if img_url.startswith(('http://', 'https://', 'oss://')):
+            new_frames.append(img_url)
+        else:
+            processed_url = process_image(img_url, max_size_mb)
+            new_frames.append(processed_url)
     return new_frames
 
 
@@ -78,7 +86,7 @@ def process_video_file(video_url: str, api_key: str, model_name: str = "qwen-vl-
     """处理单个视频文件
     
     Args:
-        video_url: 视频URL (file://格式)
+        video_url: 视频URL (file://、http://、https://或oss://格式)
         api_key: API密钥
         model_name: 模型名称
         
@@ -89,6 +97,10 @@ def process_video_file(video_url: str, api_key: str, model_name: str = "qwen-vl-
         FileNotFoundError: 文件不存在时抛出
         ValueError: 文件过大时抛出
     """
+    # 如果是网络URL或OSS URL，直接返回
+    if video_url.startswith(('http://', 'https://', 'oss://')):
+        return video_url
+    
     if not _is_local_file_url(video_url):
         raise FileNotFoundError(f"本地 video 路径不存在: {video_url}")
     

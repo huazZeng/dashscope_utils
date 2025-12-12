@@ -3,7 +3,7 @@
  
 from .clients.base import BaseLLMClient
 from .clients.dashscope_client import DashScopeClient
-from .ratelimit import RateLimitManager
+from .manager import RateLimitManager
 from .types import ChatPayload, ChatResult
 from .utils import DashScopeFileUploader, upload_file_to_oss
 
