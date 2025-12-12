@@ -8,8 +8,7 @@ from dashscope.aigc.multimodal_conversation import AioMultiModalConversation
 from ..utils.media_utils import process_media_content
 
 from .base import BaseLLMClient, ChatPayload, ChatResult
-
-
+ 
 class DashScopeClient(BaseLLMClient):
     """
     基于 DashScope 官方 SDK 的适配任务实现。
@@ -23,12 +22,14 @@ class DashScopeClient(BaseLLMClient):
         base_url: Optional[str] = None,
         default_model: Optional[str] = None,
         timeout: float = 300,
+        temp_dir: Optional[str] = None,
     ) -> None:
         super().__init__(api_key=api_key, base_url=base_url, default_model=default_model)
         self._api_key = api_key
         self._base_url = base_url
         self._default_model = default_model
         self._timeout = timeout
+        self._temp_dir = temp_dir
 
     def _prepare_payload(self, payload: ChatPayload) -> ChatPayload:
         messages = payload.get("messages", [])
@@ -37,7 +38,7 @@ class DashScopeClient(BaseLLMClient):
         for msg in messages:
             content = msg.get("content")
             if isinstance(content, list):
-                msg["content"] = process_media_content(content, self._api_key, model_name)
+                msg["content"] = process_media_content(content, self._api_key, model_name, self._temp_dir)
         
         return payload
 

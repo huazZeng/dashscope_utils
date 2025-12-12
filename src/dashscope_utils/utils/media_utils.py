@@ -23,12 +23,13 @@ def _is_local_file_url(url: str) -> bool:
         return False
 
 
-def process_image(image_url: str, max_size_mb: int = 10) -> str:
+def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -> str:
     """处理单个图像文件
     
     Args:
         image_url: 图像URL (file://、http://、https://或oss://格式)
         max_size_mb: 最大文件大小(MB)，超过则压缩
+        temp_dir: 临时文件存储目录，默认使用系统临时目录
         
     Returns:
         处理后的图像URL
@@ -53,7 +54,8 @@ def process_image(image_url: str, max_size_mb: int = 10) -> str:
         base_quality = 85
         quality = max(int(base_quality * ratio), 20)
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmpf:
+        # 使用指定的临时目录或系统默认目录
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=temp_dir) as tmpf:
             compressed_path = tmpf.name
         compress_image(image_path, compressed_path, quality=quality)
         return "file://" + compressed_path
@@ -61,12 +63,13 @@ def process_image(image_url: str, max_size_mb: int = 10) -> str:
         return "file://" + image_path
 
 
-def process_video_frames(video_frames: List[str], max_size_mb: int = 10) -> List[str]:
+def process_video_frames(video_frames: List[str], max_size_mb: int = 10, temp_dir: str = None) -> List[str]:
     """处理视频帧列表（每一帧是图片）
     
     Args:
         video_frames: 视频帧URL列表
         max_size_mb: 每张图片最大文件大小(MB)
+        temp_dir: 临时文件存储目录，默认使用系统临时目录
         
     Returns:
         处理后的视频帧URL列表
@@ -77,7 +80,7 @@ def process_video_frames(video_frames: List[str], max_size_mb: int = 10) -> List
         if img_url.startswith(('http://', 'https://', 'oss://')):
             new_frames.append(img_url)
         else:
-            processed_url = process_image(img_url, max_size_mb)
+            processed_url = process_image(img_url, max_size_mb, temp_dir)
             new_frames.append(processed_url)
     return new_frames
 
@@ -120,13 +123,14 @@ def process_video_file(video_url: str, api_key: str, model_name: str = "qwen-vl-
         return "file://" + video_path
 
 
-def process_media_content(content: List[Dict[str, Any]], api_key: str, model_name: str = "qwen-vl-plus") -> List[Dict[str, Any]]:
+def process_media_content(content: List[Dict[str, Any]], api_key: str, model_name: str = "qwen-vl-plus", temp_dir: str = None) -> List[Dict[str, Any]]:
     """处理多模态内容中的媒体文件
     
     Args:
         content: 多模态内容列表
         api_key: API密钥
         model_name: 模型名称
+        temp_dir: 临时文件存储目录，默认使用系统临时目录
         
     Returns:
         处理后的内容列表
@@ -140,14 +144,14 @@ def process_media_content(content: List[Dict[str, Any]], api_key: str, model_nam
             
         # 处理图像
         if "image" in entry:
-            entry["image"] = process_image(entry["image"])
+            entry["image"] = process_image(entry["image"], temp_dir=temp_dir)
         
         # 处理视频
         if "video" in entry:
             video_value = entry["video"]
             if isinstance(video_value, list):
                 # 视频帧列表
-                entry["video"] = process_video_frames(video_value)
+                entry["video"] = process_video_frames(video_value, temp_dir=temp_dir)
             else:
                 # 单个视频文件
                 entry["video"] = process_video_file(video_value, api_key, model_name)
