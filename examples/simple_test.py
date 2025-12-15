@@ -29,8 +29,8 @@ async def main():
         "messages": [
             {"role": "user", "content":
                 [
-                    {"image": "file:///inspire/hdd/project/video-understanding/public/personal/hzzeng/workspace/infra/dashscope_utils/data/DSC02239.JPG"},
-                    {"text": "请描述这张图片的内容"}
+                    {"video": "file://x"},
+                    {"text": "请描述这段视频的内容"}
                 ]
             }
         ]
