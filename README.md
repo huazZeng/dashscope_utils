@@ -220,5 +220,5 @@ export DASHSCOPE_API_KEY="your-dashscope-api-key"
 
 ## 许可证
 
-MIT License
+Apache 2.0
 
