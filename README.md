@@ -162,6 +162,22 @@ asyncio.run(main())
 | `max_pixels` | number | 最大分辨率 |
 | `min_pixels` | number | 最小分辨率 |
 
+
+### 视频抽帧参数（fps）
+
+```python
+messages = [
+    {"role": "user",
+     "content": [
+        # fps 控制抽帧频率：每秒抽取 fps 帧（等价于每隔 1/fps 秒取一帧）
+        {"video": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241115/cqqkru/1.mp4", "fps": 2},
+        {"text": "这段视频的内容是什么?"}
+     ]}
+]
+```
+
+- `fps`：可选，视频抽帧频率。不传则使用模型默认抽帧策略；更多含义参考官方文档（同阿里云 API 说明）。
+
 ## 完整文档
 
 - [API 使用指南](src/dashscope_utils/clients/api.md) - 详细的参数说明和使用示例
