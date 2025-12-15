@@ -1,9 +1,11 @@
+import base64
 import os
-import tempfile
+from io import BytesIO
 from typing import Any, Dict, List, Union
 from urllib.parse import urlparse, unquote
 
-from .image_utils import compress_image
+from PIL import Image
+
 from .upload_helpers import upload_file_to_oss
 
 
@@ -38,10 +40,13 @@ def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -
         FileNotFoundError: 文件不存在时抛出
     """
     # 如果是网络URL或OSS URL，直接返回
+    print(f"image_url: {image_url}")
     if image_url.startswith(('http://', 'https://', 'oss://')):
+        print(f"network image_url: {image_url}")
         return image_url
     
     if not _is_local_file_url(image_url):
+        print(f"local image_url: {image_url}")
         raise FileNotFoundError(f"本地 image 路径不存在: {image_url}")
     
     image_path = unquote(urlparse(image_url).path)
@@ -53,12 +58,14 @@ def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -
         ratio = max_size_bytes / file_size
         base_quality = 85
         quality = max(int(base_quality * ratio), 20)
-        
-        # 使用指定的临时目录或系统默认目录
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=temp_dir) as tmpf:
-            compressed_path = tmpf.name
-        compress_image(image_path, compressed_path, quality=quality)
-        return "file://" + compressed_path
+        # 直接压缩到内存并返回 base64，避免生成临时文件
+        with Image.open(image_path) as img:
+            img = img.convert("RGB")
+            buffer = BytesIO()
+            img.save(buffer, "JPEG", optimize=True, quality=quality)
+            buffer.seek(0)
+            base64_image = base64.b64encode(buffer.read()).decode("utf-8")
+        return f"data:image/jpeg;base64,{base64_image}"
     else:
         return "file://" + image_path
 

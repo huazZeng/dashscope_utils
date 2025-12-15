@@ -20,14 +20,19 @@ async def main():
     # 创建客户端
     client = DashScopeClient(
         api_key=api_key,
-        default_model="qwen-plus",
+        default_model="qwen3-vl-plus",
         timeout=30
     )
     
     # 简单的文本对话测试
     payload = {
         "messages": [
-            {"role": "user", "content": "你好！请简单介绍一下自己。"}
+            {"role": "user", "content":
+                [
+                    {"image": "file:///inspire/hdd/project/video-understanding/public/personal/hzzeng/workspace/infra/dashscope_utils/data/DSC02239.JPG"},
+                    {"text": "请描述这张图片的内容"}
+                ]
+            }
         ]
     }
     
