@@ -1,6 +1,5 @@
-
-
-from termios import IXOFF
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Optional
 
 from dashscope.aigc.generation import AioGeneration
@@ -23,6 +22,7 @@ class DashScopeClient(BaseLLMClient):
         default_model: Optional[str] = None,
         timeout: float = 300,
         temp_dir: Optional[str] = None,
+        max_workers: Optional[int] = None,
     ) -> None:
         super().__init__(api_key=api_key, base_url=base_url, default_model=default_model)
         self._api_key = api_key
@@ -30,8 +30,10 @@ class DashScopeClient(BaseLLMClient):
         self._default_model = default_model
         self._timeout = timeout
         self._temp_dir = temp_dir
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def _prepare_payload(self, payload: ChatPayload) -> ChatPayload:
+        """同步方法，会在线程池中执行"""
         messages = payload.get("messages", [])
         model_name = payload.get("model") or self._default_model or "qwen-vl-plus"
         
@@ -41,6 +43,12 @@ class DashScopeClient(BaseLLMClient):
                 msg["content"] = process_media_content(content, self._api_key, model_name, self._temp_dir)
         
         return payload
+
+    async def chat(self, payload: ChatPayload) -> ChatResult:
+        """重写 chat 方法，将 CPU 密集型的 _prepare_payload 放到线程池执行"""
+        loop = asyncio.get_event_loop()
+        prepared = await loop.run_in_executor(self._executor, self._prepare_payload, payload)
+        return await self._execute_chat(prepared)
 
     async def _execute_chat(self, prepared_payload: ChatPayload) -> ChatResult:
         

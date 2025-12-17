@@ -2,7 +2,7 @@ import base64
 import os
 from io import BytesIO
 from typing import Any, Dict, List, Union
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote
 
 from PIL import Image
 
@@ -14,12 +14,10 @@ def _is_local_file_url(url: str) -> bool:
     if not isinstance(url, str):
         return False
     try:
-        parsed = urlparse(url)
-        if parsed.scheme != "file":
+        if not url.startswith("file://"):
             return False
-        local_path = unquote(parsed.path)
-        if parsed.fragment:
-            local_path += "#" + parsed.fragment
+        # 去掉前缀，并解码 %XX（保留 + 不变）
+        local_path = unquote(url[len("file://"):])
         return os.path.exists(local_path)
     except Exception:
         return False
@@ -40,7 +38,6 @@ def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -
         FileNotFoundError: 文件不存在时抛出
     """
     # 如果是网络URL或OSS URL，直接返回
-    print(f"image_url: {image_url}")
     if image_url.startswith(('http://', 'https://', 'oss://')):
         print(f"network image_url: {image_url}")
         return image_url
@@ -49,7 +46,8 @@ def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -
         print(f"local image_url: {image_url}")
         raise FileNotFoundError(f"本地 image 路径不存在: {image_url}")
     
-    image_path = unquote(urlparse(image_url).path)
+    # 对本地 file:// URL 去掉前缀并解码 %XX，保留 +
+    image_path = unquote(image_url[len("file://"):])
     max_size_bytes = max_size_mb * 1024 * 1024
     file_size = os.path.getsize(image_path)
     
@@ -67,7 +65,12 @@ def process_image(image_url: str, max_size_mb: int = 10, temp_dir: str = None) -
             base64_image = base64.b64encode(buffer.read()).decode("utf-8")
         return f"data:image/jpeg;base64,{base64_image}"
     else:
-        return "file://" + image_path
+        # 不压缩也直接返回 base64，保持原始 MIME
+        mime = Image.open(image_path).get_format_mimetype() or "application/octet-stream"
+        with open(image_path, "rb") as f:
+            raw = f.read()
+        base64_image = base64.b64encode(raw).decode("utf-8")
+        return f"data:{mime};base64,{base64_image}"
 
 
 def process_video_frames(video_frames: List[str], max_size_mb: int = 10, temp_dir: str = None) -> List[str]:
@@ -114,7 +117,8 @@ def process_video_file(video_url: str, api_key: str, model_name: str = "qwen-vl-
     if not _is_local_file_url(video_url):
         raise FileNotFoundError(f"本地 video 路径不存在: {video_url}")
     
-    video_path = unquote(urlparse(video_url).path)
+    # 本地 file:// 去掉前缀并解码 %XX，保留 +
+    video_path = unquote(video_url[len("file://"):])
     max_size_bytes = 100 * 1024 * 1024  # 100MB
     max_upload_size_bytes = 2 * 1024 * 1024 * 1024  # 2GB
     file_size = os.path.getsize(video_path)

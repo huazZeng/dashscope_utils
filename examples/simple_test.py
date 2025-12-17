@@ -29,7 +29,7 @@ async def main():
         "messages": [
             {"role": "user", "content":
                 [
-                    {"video": "file://x"},
+                    {"image": "file:///inspire/hdd/project/video-understanding/public/data/video_data/multimodal_textbook/dataset_images_interval_7/7PPDNBfQmuw/7PPDNBfQmuw@10301.06_10318.74#1.jpg"},
                     {"text": "请描述这段视频的内容"}
                 ]
             }
